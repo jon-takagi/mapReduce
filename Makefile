@@ -1,4 +1,11 @@
-wordcount:
-	g++ -o wordcount.bin wordcount.cpp -Wall -Werror -pthread -O3 --std=c++11
+all: wordcount.bin
+	echo "Done!"
+mapreduce.o:
+	g++ -o mapreduce.o mapreduce.cpp -Wall -Werror -pthread -O3 --std=c++11 -c
+wordcount.o:
+	g++ -o wordcount.o wordcount.cpp -Wall -Werror -pthread -O3 --std=c++11 -c
+wordcount.bin: mapreduce.o wordcount.o
+	g++ -o wordcount.bin wordcount.o mapreduce.o -Wall -Werror -pthread -O3 --std=c++11
 clean:
 	rm *.bin
+	rm *.o
