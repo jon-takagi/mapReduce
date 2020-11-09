@@ -53,11 +53,12 @@ void map_worker(MapReduce::mapper_t map, std::vector<char*>* todo, std::mutex* t
 
 const std::string get_next(const std::string& key, int partition_number) {
     pdata_partition_t* partition = &(processed_data->at(partition_number)); // no bounds checking
-    pdata_map_t map = partition->first;
-    std::vector<std::string> values_of_key = map[key].first;
-    if (values_of_key.size() > 0) {
-        std::string rv = values_of_key.back();
-        values_of_key.pop_back();
+    pdata_map_t* map = &(partition->first);
+    std::vector<std::string>* values_of_key = &(map->at(key).first); // this might just be a copy
+    if (values_of_key->size() > 0) {
+        std::cout << "size of " << key << " is: " << values_of_key->size() << std::endl;
+        std::string rv = values_of_key->back();
+        values_of_key->pop_back();
         return rv;
     } else {
         return "";
@@ -69,7 +70,7 @@ void reduce_worker(MapReduce::reducer_t reduce, int partition_number) {
     // call reduce on each of the keys in order
     pdata_partition_t *partition = &(processed_data->at(partition_number));
     pdata_map_t kv_map = partition->first;
-    std::cout << "beginning reduce loop" << std::endl;
+    std::cout << "beginning reduce loop in partition " << partition_number << std::endl;
     for(std::map<std::string,value_set_t>::iterator iter = kv_map.begin(); iter != kv_map.end(); ++iter)
     {
         std::cout << "working..." << std::endl;

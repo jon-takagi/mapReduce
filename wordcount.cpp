@@ -25,8 +25,7 @@ void Reduce(const std::string& key, MapReduce::getter_t get_next, int partition_
     std::cout << "key: " << key << std::endl;
     int count = 0;
     std::basic_string<char> value = get_next(key, partition_number);
-    std::cout << "got next" << std::endl;
-    while (!value.empty()) {
+    while (value != "") {
         count++;
         value = get_next(key, partition_number);
     }
