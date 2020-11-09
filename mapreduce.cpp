@@ -5,6 +5,7 @@
 #include <utility>
 #include <thread>
 #include <memory>
+#include <iostream>
 
 
 using value_set_t = std::pair<std::vector<std::string>, std::shared_ptr<std::mutex> >;
@@ -79,13 +80,6 @@ void reduce_worker(MapReduce::reducer_t reduce, int partition_number) {
 
 namespace MapReduce {
     void MR_Emit(const std::string& key, const std::string& value) { // called by Map - this adds a key, value pair to some centralized
-        // todo: all of this
-        // put the key and value into processed_data
-        // int partition = ; // todo: how do we figure this out?
-        // get the map in the partition
-        // see if it has the key
-        // if it does,
-
         // FIRST: figure out which partition this key belongs in, and get pointers
         //  to the appropriate map
 
@@ -98,11 +92,18 @@ namespace MapReduce {
         // TODO: not this.
         pdata_map_t::iterator key_it = partition_map->find(key);
         if (key_it == partition_map->end()) {
+
+            //std::cout << "ATTEMPTING TO CLAIM PARTITION LOCK\n";
+            //std::cout << partition_mutex << "\n";
             partition_mutex->lock();
             key_it = partition_map->find(key);
             if (key_it == partition_map->end()) {
                 partition_map->emplace(std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple());//, value_set_t());//std::vector<std::string>(), std::mutex()));
+                partition_map->at(key).second.reset(new std::mutex);
             }
+
+            //std::cout << "RELEASING PARTITION LOCK\n";
+
             partition_mutex->unlock();
         }
 
@@ -135,9 +136,15 @@ namespace MapReduce {
         // then create num_reducers reducing threads
         // each reducer thread calls Reduce on the keys in its partition, in order
         // get_next needs to be an iterator
+
+        std::cout << "Setting up processed_data\n";
+
         for (int i = 0; i < num_reducers; i++) { // hopefully this works to set things up
           processed_data->emplace_back();
+          processed_data->back().second.reset(new std::mutex);
         }
+
+        std::cout << "Setting up task vector\n";
         // set up task vector;
         std::vector<char*> todo;
         std::mutex todo_mutex;
@@ -145,28 +152,34 @@ namespace MapReduce {
           todo.push_back(argv[i]);
         }
 
+
+        std::cout << "Setting up mapper_threads\n";
         // set up mapper thread vector;
         std::vector<std::thread> mapper_threads;
         for(int i = 0; i < num_mappers; i++) {
           mapper_threads.push_back(std::thread(map_worker, map, &todo, &todo_mutex));
         }
 
+        std::cout << "Waiting for mappers to finish\n";
         // wait for all the workers to finish
         while (mapper_threads.size() > 0) {
             mapper_threads.back().join();
             mapper_threads.pop_back();
         }
 
+        std::cout << "Setting up num_reducers\n";
         std::vector<std::thread> reducer_threads;
         for (int i = 0; i < num_reducers; i++) {
           reducer_threads.push_back(std::thread(reduce_worker, reduce, i));
         }
 
+        std::cout << "Waiting for reducer_threads to finish\n";
         while (reducer_threads.size() > 0) {
           reducer_threads.back().join();
           reducer_threads.pop_back();
         }
 
+        std::cout << "Done!\n";
         delete processed_data; // do we also need to free all the strings in the map?
     }
 }
