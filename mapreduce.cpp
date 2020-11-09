@@ -56,7 +56,7 @@ const std::string get_next(const std::string& key, int partition_number) {
     pdata_map_t* map = &(partition->first);
     std::vector<std::string>* values_of_key = &(map->at(key).first); // this might just be a copy
     if (values_of_key->size() > 0) {
-        // std::cout << "size of " << key << " is: " << values_of_key->size() << std::endl;
+        // // std::cout << "size of " << key << " is: " << values_of_key->size() << std::endl;
         std::string rv = values_of_key->back();
         values_of_key->pop_back();
         return rv;
@@ -70,13 +70,13 @@ void reduce_worker(MapReduce::reducer_t reduce, int partition_number) {
     // call reduce on each of the keys in order
     pdata_partition_t *partition = &(processed_data->at(partition_number));
     pdata_map_t kv_map = partition->first;
-    // std::cout << "beginning reduce loop in partition " << partition_number << std::endl;
+    // // std::cout << "beginning reduce loop in partition " << partition_number << std::endl;
     for(std::map<std::string,value_set_t>::iterator iter = kv_map.begin(); iter != kv_map.end(); ++iter)
     {
-        // std::cout << "working..." << std::endl;
+        // // std::cout << "working..." << std::endl;
         std::string k =  iter->first;
         reduce(k, get_next, partition_number);
-        // std::cout << "done" << std::endl;
+        // // std::cout << "done" << std::endl;
         // ignore value
         // Value v = iter->second;
     }
@@ -141,14 +141,14 @@ namespace MapReduce {
         // each reducer thread calls Reduce on the keys in its partition, in order
         // get_next needs to be an iterator
 
-        std::cout << "Setting up processed_data\n";
+        // std::cout << "Setting up processed_data\n";
 
         for (int i = 0; i < num_reducers; i++) { // hopefully this works to set things up
           processed_data->emplace_back();
           processed_data->back().second.reset(new std::mutex);
         }
 
-        std::cout << "Setting up task vector\n";
+        // std::cout << "Setting up task vector\n";
         // set up task vector;
         std::vector<char*> todo;
         std::mutex todo_mutex;
@@ -157,32 +157,32 @@ namespace MapReduce {
         }
 
 
-        std::cout << "Setting up mapper_threads\n";
+        // std::cout << "Setting up mapper_threads\n";
         // set up mapper thread vector;
         std::vector<std::thread> mapper_threads;
         for(int i = 0; i < num_mappers; i++) {
           mapper_threads.push_back(std::thread(map_worker, map, &todo, &todo_mutex));
         }
 
-        std::cout << "Waiting for mappers to finish\n";
+        // std::cout << "Waiting for mappers to finish\n";
         // wait for all the workers to finish
         while (mapper_threads.size() > 0) {
             mapper_threads.back().join();
             mapper_threads.pop_back();
         }
 
-        std::cout << "Setting up num_reducers\n";
+        // std::cout << "Setting up num_reducers\n";
         std::vector<std::thread> reducer_threads;
         for (int i = 0; i < num_reducers; i++) {
           reducer_threads.push_back(std::thread(reduce_worker, reduce, i));
         }
 
-        std::cout << "Waiting for reducer_threads to finish\n";
+        // std::cout << "Waiting for reducer_threads to finish\n";
         while (reducer_threads.size() > 0) {
           reducer_threads.back().join();
           reducer_threads.pop_back();
         }
-        std::cout << "Done!\n";
+        // std::cout << "Done!\n";
         delete processed_data; // do we also need to free all the strings in the map?
     }
 }
