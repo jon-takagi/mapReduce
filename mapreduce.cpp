@@ -4,11 +4,12 @@
 #include <mutex>
 #include <utility>
 #include <thread>
+#include <memory>
 
 
-using value_set_t = std::pair<std::vector<std::string>, std::mutex>;
+using value_set_t = std::pair<std::vector<std::string>, std::shared_ptr<std::mutex> >;
 using pdata_map_t = std::map<std::string, value_set_t>;
-using pdata_partition_t = std::pair<pdata_map_t, std::mutex>;
+using pdata_partition_t = std::pair<pdata_map_t, std::shared_ptr<std::mutex> >;
 using pdata_t = std::vector<pdata_partition_t>;
 
 pdata_t* processed_data;
@@ -91,7 +92,7 @@ namespace MapReduce {
         int partition_number = partitioner(key, processed_data->size()); // this might be problematic
         pdata_partition_t* partition = &(processed_data->at(partition_number));
         pdata_map_t* partition_map = &(partition->first);
-        std::mutex* partition_mutex = &(partition->second);
+        std::mutex* partition_mutex = partition->second.get();
 
         // note: we're searching the map for the key without locking, which might be a bad idea.
         // TODO: not this.
@@ -112,7 +113,7 @@ namespace MapReduce {
 
 
         std::vector<std::string>* values = &(value_set->first);
-        std::mutex* value_set_mutex = &(value_set->second);
+        std::mutex* value_set_mutex = value_set->second.get();
         value_set_mutex->lock();
         values->push_back(value);
         value_set_mutex->unlock();
@@ -135,7 +136,7 @@ namespace MapReduce {
         // each reducer thread calls Reduce on the keys in its partition, in order
         // get_next needs to be an iterator
         for (int i = 0; i < num_reducers; i++) { // hopefully this works to set things up
-          processed_data->emplace_back(std::forward_as_tuple(), std::forward_as_tuple());
+          processed_data->emplace_back();
         }
         // set up task vector;
         std::vector<char*> todo;
