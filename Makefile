@@ -1,5 +1,5 @@
 all: wordcount.bin
-	echo "Done!"
+
 mapreduce.o:
 	g++ -o mapreduce.o mapreduce.cpp -Wall -Werror -pthread -O3 --std=c++11 -c
 wordcount.o:

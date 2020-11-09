@@ -69,10 +69,13 @@ void reduce_worker(MapReduce::reducer_t reduce, int partition_number) {
     // call reduce on each of the keys in order
     pdata_partition_t *partition = &(processed_data->at(partition_number));
     pdata_map_t kv_map = partition->first;
+    std::cout << "beginning reduce loop" << std::endl;
     for(std::map<std::string,value_set_t>::iterator iter = kv_map.begin(); iter != kv_map.end(); ++iter)
     {
+        std::cout << "working..." << std::endl;
         std::string k =  iter->first;
         reduce(k, get_next, partition_number);
+        std::cout << "done" << std::endl;
         // ignore value
         // Value v = iter->second;
     }
@@ -178,7 +181,6 @@ namespace MapReduce {
           reducer_threads.back().join();
           reducer_threads.pop_back();
         }
-
         std::cout << "Done!\n";
         delete processed_data; // do we also need to free all the strings in the map?
     }
