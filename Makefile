@@ -1,4 +1,4 @@
-all: wordcount.bin
+all: wordcount.bin grep.bin
 
 mapreduce.o:
 	g++ -o mapreduce.o mapreduce.cpp -Wall -Werror -pthread -O3 --std=c++11 -c
