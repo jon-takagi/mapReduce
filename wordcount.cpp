@@ -22,7 +22,7 @@ void Map(const char *file_name) {
 }
 
 void Reduce(const std::string& key, MapReduce::getter_t get_next, int partition_number) {
-    std::cout << "key: " << key << std::endl;
+    // std::cout << "key: " << key << std::endl;
     int count = 0;
     std::basic_string<char> value = get_next(key, partition_number);
     while (value != "") {
